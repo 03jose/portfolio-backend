@@ -1,6 +1,9 @@
-# Usa la imagen oficial de .NET 8 SDK para compilar y ejecutar
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
+
+# Render usa el puerto 10000
+ENV ASPNETCORE_URLS=http://+:10000
+EXPOSE 10000
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
