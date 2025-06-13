@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using SendGrid;
 using SendGrid.Helpers.Mail;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,17 +28,32 @@ app.MapPost("/api/contact", async (HttpContext http, IConfiguration config) =>
     var fromEmail = config["SENDER_EMAIL"];
     var toEmail = config["RECEIVER_EMAIL"];
 
-    var client = new SendGridClient(apiKey);
-    var from = new EmailAddress(fromEmail, "Portafolio Web");
-    var to = new EmailAddress(toEmail);
-    var subject = $"Mensaje de {form.Name}";
-    var plainTextContent = $"Correo: {form.Email}\n\n{form.Message}";
-    var htmlContent = $"<p><strong>Correo:</strong> {form.Email}</p><p>{form.Message}</p>";
+    try
+    {
+        Console.WriteLine($"[SendGrid] API Key loaded: {apiKey?.Substring(0, 5)}...");
+        Console.WriteLine($"[SendGrid] From: {fromEmail}, To: {toEmail}");
 
-    var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
-    var response = await client.SendEmailAsync(msg);
+        var client = new SendGridClient(apiKey);
+        var from = new EmailAddress(fromEmail, "Portafolio Web");
+        var to = new EmailAddress(toEmail);
+        var subject = $"Mensaje de {form.Name}";
+        var plainTextContent = $"Correo: {form.Email}\n\n{form.Message}";
+        var htmlContent = $"<p><strong>Correo:</strong> {form.Email}</p><p>{form.Message}</p>";
 
-    return response.IsSuccessStatusCode ? Results.Ok("Enviado") : Results.StatusCode(500);
+        var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+        var response = await client.SendEmailAsync(msg);
+
+        Console.WriteLine($"[SendGrid] Status Code: {response.StatusCode}");
+        var body = await response.Body.ReadAsStringAsync();
+        Console.WriteLine($"[SendGrid] Body: {body}");
+
+        return response.IsSuccessStatusCode ? Results.Ok("Enviado") : Results.StatusCode(500);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[SendGrid ERROR] {ex.Message}");
+        return Results.StatusCode(500);
+    }
 });
 
 app.Run();
